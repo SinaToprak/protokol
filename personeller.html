@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protokol - Personel Yönetimi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandOrange: '#FF6B00',
+                        brandYellow: '#FFD600',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Dinamik Layout Yükleyici -->
+    <script src="./js/layout.js" defer></script>
+    <!-- Sayfa İş Mantığı & Firebase -->
+    <script type="module" src="./js/personeller.js" defer></script>
+</head>
+
+<body class="bg-neutral-950 text-white min-h-screen flex justify-center font-sans">
+
+    <!-- Ana İçerik Alanı (Dikey sarmalayıcı düzene geçildi) -->
+    <main class="flex-1 p-6 md:p-8 overflow-y-auto bg-neutral-900 flex flex-col gap-6 w-full max-w-full">
+        
+        <!-- Personel Kayıt Formu (Geniş ekranlarda yatay tek satır) -->
+        <div id="personel-form-container" class="w-full bg-black border border-neutral-900 rounded-xl p-5 shadow-sm">
+            <div class="mb-4">
+                <h2 class="text-lg font-bold text-white tracking-wide" id="form-title">Personel Kaydı</h2>
+                <p class="text-xs text-neutral-500 mt-0.5" id="form-desc">Lütfen yeni personelin bilgilerini girin.</p>
+            </div>
+
+            <form id="personel-form" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 items-end">
+                <!-- Ad Soyad (Col span 3) -->
+                <div class="xl:col-span-3">
+                    <label for="ad-soyad" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Ad Soyad</label>
+                    <input type="text" id="ad-soyad" required placeholder="Örn: Ahmet Yılmaz" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                </div>
+
+                <!-- Sicil No (Col span 2) -->
+                <div class="xl:col-span-2">
+                    <label for="sicil-no" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Sicil No</label>
+                    <input type="text" id="sicil-no" required placeholder="Örn: SICIL12345" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                </div>
+
+                <!-- Kullanıcı Rolü (Col span 2) -->
+                <div class="xl:col-span-2">
+                    <label for="rol" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Kullanıcı Rolü</label>
+                    <div class="relative">
+                        <select id="rol" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors appearance-none cursor-pointer">
+                            <option value="personel" class="bg-neutral-950">Personel</option>
+                            <option value="yonetici" class="bg-neutral-950">Yönetici</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-550">
+                            <svg class="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- E-posta (Col span 2) -->
+                <div class="xl:col-span-2">
+                    <label for="eposta" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">E-posta</label>
+                    <input type="email" id="eposta" placeholder="ahmet.yilmaz@protokol.com" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                </div>
+
+                <!-- Telefon (Col span 2) -->
+                <div class="xl:col-span-2">
+                    <label for="telefon" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Telefon</label>
+                    <input type="tel" id="telefon" placeholder="0555 555 55 55" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                </div>
+
+                <!-- Kaydet Butonu (Col span 1) -->
+                <div class="xl:col-span-1">
+                    <button type="submit" class="w-full bg-brandOrange hover:bg-orange-600 text-white font-bold py-2 px-3 rounded text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5 uppercase tracking-wider">
+                        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Kaydet</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Personel Listesi Alanı -->
+        <div class="w-full space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">Kayıtlı Personeller</h1>
+                    <p class="text-xs text-neutral-500 mt-0.5">Sistemde aktif çalışan personel kayıtları.</p>
+                </div>
+                <span id="personel-count" class="bg-neutral-900 border border-neutral-850 text-neutral-400 text-xs font-bold px-3 py-1 rounded-full hidden">
+                    0 Personel
+                </span>
+            </div>
+
+            <!-- Kart Izgarası -->
+            <div id="personel-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start w-full"></div>
+        </div>
+    </main>
+
+</body>
+
+</html>

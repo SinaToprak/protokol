@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalibrasyon Protokolü - Giriş</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandOrange: '#FF6B00',
+                        brandYellow: '#FFD600',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Giriş yapılmışsa giriş arayüzünü gizle */
+        .logged-in #login-view {
+            display: none !important;
+        }
+    </style>
+    <script>
+        // Hızlı oturum kontrolü (Giriş sayfasının anlık görünmesini engeller)
+        const checkUser = JSON.parse(localStorage.getItem('loggedInUser'));
+        if (checkUser) {
+            document.documentElement.classList.add('logged-in');
+        }
+    </script>
+    <!-- Küresel Layout Script'i (Oturum varsa sol menüyü çizer) -->
+    <script src="./js/layout.js" defer></script>
+    <!-- Giriş Mantığı -->
+    <script type="module" src="./js/login.js" defer></script>
+</head>
+
+<body class="bg-neutral-950 text-white min-h-screen flex items-center justify-center font-sans p-4 relative overflow-hidden">
+
+    <!-- Dinamik Giriş / Dashboard Ayracı -->
+    <script>
+        const loggedIn = JSON.parse(localStorage.getItem('loggedInUser'));
+        if (loggedIn) {
+            // Body sınıflarını layout'a uydur
+            document.body.className = "bg-neutral-950 text-white min-h-screen flex justify-center font-sans";
+            
+            // Dashboard Main alanını oluştur
+            const main = document.createElement("main");
+            main.className = "flex-1 p-6 md:p-8 overflow-y-auto bg-neutral-900 flex flex-col justify-center items-center";
+            main.innerHTML = `
+                <div class="text-center max-w-xl p-8 bg-black border border-neutral-800 rounded-2xl shadow-2xl relative overflow-hidden">
+                    <div class="absolute -top-20 -left-20 w-40 h-40 bg-brandOrange/10 rounded-full blur-2xl"></div>
+                    <h1 class="text-3xl font-extrabold text-white tracking-tight mb-4 relative z-10">
+                        Kalibrasyon Protokolüne <span class="text-brandOrange">Hoş Geldiniz</span>
+                    </h1>
+                    <p class="text-neutral-400 text-sm mb-6 leading-relaxed relative z-10">
+                        Merhaba, <span class="text-white font-semibold">${loggedIn.adSoyad}</span> (${loggedIn.rol === 'yonetici' ? 'Yönetici' : 'Personel'}). Sistem kimliğiniz başarıyla doğrulandı. 
+                        Sol menü üzerinden yetkilendirildiğiniz alanlara erişebilirsiniz.
+                    </p>
+                    ${loggedIn.rol === 'yonetici' ? `
+                        <a href="./personeller.html" class="inline-flex items-center space-x-2 bg-brandOrange hover:bg-orange-600 text-white font-semibold py-2.5 px-5 rounded-lg transition-colors cursor-pointer text-xs uppercase tracking-wider relative z-10 shadow-lg shadow-brandOrange/20">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>Personel Yönetimi</span>
+                        </a>
+                    ` : `
+                        <div class="text-brandYellow text-xs font-semibold bg-brandYellow/5 border border-brandYellow/25 rounded-lg py-2.5 px-4 inline-block relative z-10 select-none">
+                            Personel paneli üzerinden işlemlerinizi sürdürebilirsiniz.
+                        </div>
+                    `}
+                </div>
+            `;
+            document.body.appendChild(main);
+        }
+    </script>
+
+    <!-- Giriş Ekranı Görünümü -->
+    <div id="login-view" class="w-full min-h-screen flex items-center justify-center absolute inset-0 z-10 p-4">
+        <!-- Arka Plan Premium Efektleri -->
+        <div class="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brandOrange/5 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[500px] h-[500px] bg-brandYellow/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <!-- Giriş Kartı -->
+        <div class="w-full max-w-md bg-black/40 border border-neutral-900 rounded-3xl p-8 md:p-10 shadow-2xl relative backdrop-blur-md overflow-hidden">
+            <!-- Kart Üzeri İnce Işık Hattı -->
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brandOrange to-transparent"></div>
+
+            <!-- Logo ve Başlık -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-black tracking-tight text-white uppercase">
+                    KALİBRASYON <span class="text-brandOrange">PROTOKOLÜ</span>
+                </h1>
+                <p class="text-xs font-semibold text-brandYellow tracking-widest uppercase mt-2 select-none">
+                    VERİMSİZ FREKANSLARI FİLTRELER
+                </p>
+            </div>
+
+            <!-- Giriş Formu -->
+            <form id="login-form" class="space-y-6">
+                <!-- Sicil No -->
+                <div>
+                    <label for="login-sicil" class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">Sicil No</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-neutral-500">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3m-3 3h3m-3 3h3m-6 1h4a2 2 0 002-2V6a2 2 0 00-2-2H9a2 2 0 00-2-2v10a2 2 0 002 2zm3-4a1 1 0 11-2 0 1 1 0 012 0z" />
+                            </svg>
+                        </span>
+                        <input type="text" id="login-sicil" required placeholder="Sicil numaranızı girin" class="w-full bg-black border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors text-sm">
+                    </div>
+                </div>
+
+                <!-- Şifre -->
+                <div>
+                    <label for="login-sifre" class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">Şifre</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-neutral-500">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </span>
+                        <input type="password" id="login-sifre" required placeholder="Şifrenizi girin" class="w-full bg-black border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors text-sm">
+                    </div>
+                </div>
+
+                <!-- Giriş Butonu -->
+                <button type="submit" class="w-full bg-brandOrange hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-xl transition-colors uppercase tracking-wider text-sm flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-brandOrange focus:ring-offset-2 focus:ring-offset-black cursor-pointer shadow-lg shadow-brandOrange/25">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Giriş Yap</span>
+                </button>
+            </form>
+
+            <!-- Versiyon Bilgisi -->
+            <div class="mt-8 text-center">
+                <span class="text-xs text-neutral-600 font-mono">v1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
