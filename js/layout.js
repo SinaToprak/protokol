@@ -1,5 +1,348 @@
+// ============================================================================
+// FCM (Firebase Cloud Messaging) YAPILANDIRMA ANAHTARLARI
+// ============================================================================
+window.VAPID_KEY = "BAlCTmQT-hFKUOvzjMiatnEz_c8ikNlyWmeqD8t3f8keoOWKA1mogeAo3LjEhg8wA0bqVLSf5I8FxHpr8LCU-iA"; 
+
+// Google Service Account Yetkilendirme Bilgileri (FCM HTTP v1 için)
+window.SERVICE_ACCOUNT = {
+  project_id: "protokol-0903",
+  client_email: "firebase-adminsdk-fbsvc@protokol-0903.iam.gserviceaccount.com",
+  private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDV3SXV0qGoyDZO\nMlbXgpNLGdqThwAo28XT7nmB06NluR9CCtPabOobAZTiu+KThn4u88jckFyH6UQW\n7V2PzuAa5xmlvo6azin4f/1V/j/VA7dLIGsLCYSRkaw/wPOcSxVs/AJtdc8e/YCr\n8a/C6CcYB2/A+Im9tLoQQkxL5vsDTEBgIaXrLIeTb8oG18UEKZYTypnOURnCMwgP\nDKjMUQrrmDwvbnW0mEz1itZtMxdCNesmekBvYWJe2jaCcox7RfPtOcSB+NNaWmSL\nCTu8/u3aFAIsvP0HaCclVGD97Kj9ud15uCzX8eepca9njEkyU77lcneBv1pv2aEd\nagntd77xAgMBAAECggEAEbQlX354uGvz0Y7+5lyI9z9peytCmvSae0ad/gki2RcK\nhzaLPrp5D17sUBqlO84h4El5ArKGnmTz0ywMweH/u5UO5/a5f7IlAk0Mun4kvZb5\nqOPtnd5zVXOS0pI/+Fu00dlIwClE9I1KsLEopMCqtSVZyHEqly7V9OZFbPEZgrZk\nmSDNs7F8K9oHmrEIAWr6jqlknlUljmQi+b7WucDw/noQgWkh7SKn4ymQoql2on1G\nrwlXdPh5IUDTqcwWiAIStBNPmm1CdgobV51qIrjQGuODV14QlO+zRHrBZu1aK5nf\nrHDhE0+WtwwrWXl2g9Q/MbR5G89II+P9q+i2LyzimQKBgQD1KbAP0YgkYTCRi4Lg\ns7GCBUi2M5qd6HJEpAPYHOUsGOG9y0P1dK5Klgesc2NLYUB2veGcGMewegf1p61O\nOaURUZ5JvC2+FRNDsSfFhnw18pDLp6M/qC57lW4yeSHzuhy/5rPzAyhP5//SDexp\neznC83BZmQTijizsNHUSKp3gPQKBgQDfUUZArNu4oQqj3rvIYbmFTM4ZcUcOR4qT\nJp8PvzinBRcyi+ItmJNVKAmwdxb/Bju3cn8fJw/xJ1mPPiy/yhLzcl9mxwrYtwcn\n0QdfelRPTcMkI18vtw8xGiJByUO9R8Ofj5vQoCZiwfYg0EVEPAIpR3DyCPRquUyv\nYMeBkdXwxQKBgCRyaSFA5jt6U20fz3o2XKpWvMORkmftWaeItqWXTh6rKEw9/sFr\n8klWWpexo85eC+ZbPkIlkPJUggBsSCB8A2U6vAx8NFSw72c93ArKfobKo+oS5vsc\ntqRax8IrLff88C87Tf9PtduDQw3oUgAweJrZ9Bbt38MKnfUTq1/jBAuFAoGAUgFE\nbQeM//WTNK3cAy9vsvWLUWh5kVLQHk02Z8/ue9awuA0KF3hJ0iGLvVNeDHQ7hZfz\n+nqbrhCnIKTSRfNslh1PzywUXZSIeiSWMod3Yk/J8wFSOPFeEMfqAIJp753kxjk0\nHJ5Suj1DprUUWoQ2vvXPEfIb3v0Anf5KBNiK2YkCgYEA0/9yJ0SzjRT5u4fIKrEv\nmqB14TJdR7NbWVDlpV2shWG+oU471bKTAH7E5IgdEKmt6MCzmqQL9Cp2r6UIVatG\nxIEirjOEI65BVSc1iRU7ebwmnqiqL1jtBRo+7QNWFBz850i/6ljbBcV8OGISX7Ok\nRtKAq2SUSDB3qplXb4teMm8=\n-----END PRIVATE KEY-----\n"
+};
+
+// Telegram Bot Bildirim Yapılandırması (Kendi Botunuzun bilgilerini buraya girin)
+window.TELEGRAM_BOT_TOKEN = "8642510865:AAGMcXAr2RXlGo0H5LFEvSthvpiEgl1JsCQ";
+window.TELEGRAM_GROUP_CHAT_ID = "-1003929611989";
+
+// 1. Dinamik Kütüphane Yükleyici
+function loadScript(url) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+// 2. Google OAuth2 Access Token Üretme (FCM Yetkilendirme)
+async function getFCMTokenOAuth2() {
+    if (typeof KJUR === "undefined") {
+        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.9.0/jsrsasign-all-min.js");
+    }
+
+    const sa = window.SERVICE_ACCOUNT;
+    const header = { alg: "RS256", typ: "JWT" };
+    const now = Math.floor(Date.now() / 1000);
+    const claim = {
+        iss: sa.client_email,
+        scope: "https://www.googleapis.com/auth/firebase.messaging",
+        aud: "https://oauth2.googleapis.com/token",
+        exp: now + 3600,
+        iat: now
+    };
+
+    const sHeader = JSON.stringify(header);
+    const sClaim = JSON.stringify(claim);
+    const jwt = KJUR.jws.JWS.sign("RS256", sHeader, sClaim, sa.private_key);
+
+    try {
+        const response = await fetch("https://oauth2.googleapis.com/token", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: new URLSearchParams({
+                grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                assertion: jwt
+            })
+        });
+        const data = await response.json();
+        return data.access_token;
+    } catch (err) {
+        console.error("[FCM] OAuth2 Access Token alma hatası:", err);
+        return null;
+    }
+}
+
+// 3. FCM Başlatma ve Token Kaydı
+async function initializeFirebaseMessaging() {
+    const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+    if (!loggedInUser) return;
+
+    try {
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js");
+        const { getDatabase, ref, set } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js");
+        const { getMessaging, getToken, onMessage } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-messaging.js");
+        const { firebaseConfig } = await import("../db/firebase.js");
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const messaging = getMessaging(app);
+
+        Notification.requestPermission().then(async (permission) => {
+            if (permission === 'granted') {
+                try {
+                    const token = await getToken(messaging, { vapidKey: window.VAPID_KEY });
+                    if (token) {
+                        console.log("[FCM] Token Alındı:", token);
+                        const tokenRef = ref(db, `personeller/${loggedInUser.uid}/fcmTokens/${token}`);
+                        await set(tokenRef, true);
+                        localStorage.setItem('fcmToken', token);
+                    }
+                } catch (err) {
+                    console.error("[FCM] Token alma hatası:", err);
+                }
+            }
+        });
+
+        onMessage(messaging, (payload) => {
+            console.log("[FCM] Ön planda bildirim alındı:", payload);
+            window.showToast(`${payload.notification.title}: ${payload.notification.body}`, "warning");
+        });
+
+    } catch (err) {
+        console.error("[FCM] Başlatılırken hata oluştu:", err);
+    }
+}
+
+// 4. Belirli Bir Kullanıcıya Bildirim Gönderme Yardımcısı (FCM HTTP v1)
+window.sendNotificationToUser = async (targetUid, title, body) => {
+    try {
+        const accessToken = await getFCMTokenOAuth2();
+        if (!accessToken) return;
+
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js");
+        const { getDatabase, ref, get, remove } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js");
+        const { firebaseConfig } = await import("../db/firebase.js");
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const snapshot = await get(ref(db, `personeller/${targetUid}/fcmTokens`));
+        const tokens = snapshot.val() || {};
+        const tokenList = Object.keys(tokens);
+
+        if (tokenList.length === 0) return;
+
+        const sendPromises = tokenList.map(async (token) => {
+            const requestBody = {
+                message: {
+                    token: token,
+                    notification: {
+                        title: title,
+                        body: body
+                    },
+                    data: {
+                        click_action: "./index.html"
+                    }
+                }
+            };
+            try {
+                const res = await fetch(`https://fcm.googleapis.com/v1/projects/${window.SERVICE_ACCOUNT.project_id}/messages:send`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                if (!res.ok) {
+                    const errText = await res.text();
+                    console.error(`[FCM Error] Gönderim başarısız (${token.substring(0, 8)}...):`, errText);
+                    
+                    // Eski/Geçersiz Token Kendi Kendini Temizleme Mekanizması
+                    if (errText.includes("UNREGISTERED") || errText.includes("NotRegistered")) {
+                        console.log(`[FCM Cleanup] Geçersiz/Süresi dolmuş token tespit edildi, veritabanından siliniyor: ${token.substring(0, 8)}...`);
+                        try {
+                            await remove(ref(db, `personeller/${targetUid}/fcmTokens/${token}`));
+                        } catch (cleanErr) {
+                            console.log(`[FCM Cleanup] Yetki kısıtlaması nedeniyle token silinemedi (Yönetici temizleyebilir):`, cleanErr.message);
+                        }
+                    }
+                } else {
+                    const data = await res.json();
+                    console.log(`[FCM Success] Bildirim başarıyla gönderildi:`, data);
+                }
+            } catch (err) {
+                console.error(`[FCM Network Error]`, err);
+            }
+        });
+
+        await Promise.all(sendPromises);
+    } catch (err) {
+        console.error("[FCM] Gönderim hatası:", err);
+    }
+};
+
+// 5. Tüm Yöneticilere Bildirim Gönderme Yardımcısı (FCM HTTP v1)
+window.sendNotificationToAllManagers = async (title, body) => {
+    try {
+        const accessToken = await getFCMTokenOAuth2();
+        if (!accessToken) return;
+
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js");
+        const { getDatabase, ref, get, remove } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js");
+        const { firebaseConfig } = await import("../db/firebase.js");
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const snapshot = await get(ref(db, 'personeller'));
+        const personeller = snapshot.val() || {};
+
+        const allTokens = []; // [{ uid, token }] nesneleri tutarak hangi token kimin bilelim
+        Object.keys(personeller).forEach(uid => {
+            const p = personeller[uid];
+            if (p.rol === 'yonetici' && p.fcmTokens) {
+                Object.keys(p.fcmTokens).forEach(t => allTokens.push({ uid, token: t }));
+            }
+        });
+
+        if (allTokens.length === 0) return;
+
+        const sendPromises = allTokens.map(async ({ uid, token }) => {
+            const requestBody = {
+                message: {
+                    token: token,
+                    notification: {
+                        title: title,
+                        body: body
+                    },
+                    data: {
+                        click_action: "./index.html"
+                    }
+                }
+            };
+            try {
+                const res = await fetch(`https://fcm.googleapis.com/v1/projects/${window.SERVICE_ACCOUNT.project_id}/messages:send`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                if (!res.ok) {
+                    const errText = await res.text();
+                    console.error(`[FCM Error] Yöneticiye gönderim başarısız (${token.substring(0, 8)}...):`, errText);
+                    
+                    // Eski/Geçersiz Token Kendi Kendini Temizleme Mekanizması
+                    if (errText.includes("UNREGISTERED") || errText.includes("NotRegistered")) {
+                        console.log(`[FCM Cleanup] Yöneticinin geçersiz/süresi dolmuş tokenı siliniyor: ${token.substring(0, 8)}...`);
+                        try {
+                            await remove(ref(db, `personeller/${uid}/fcmTokens/${token}`));
+                        } catch (cleanErr) {
+                            console.log(`[FCM Cleanup] Yetki kısıtlaması nedeniyle token silinemedi (Yönetici temizleyebilir):`, cleanErr.message);
+                        }
+                    }
+                } else {
+                    const data = await res.json();
+                    console.log(`[FCM Success] Yöneticiye bildirim başarıyla gönderildi:`, data);
+                }
+            } catch (err) {
+                console.error(`[FCM Network Error]`, err);
+            }
+        });
+
+        await Promise.all(sendPromises);
+    } catch (err) {
+        console.error("[FCM] Yönetici bildirimi hatası:", err);
+    }
+};
+
+// 6. Belirli Bir Kullanıcıya Telegram Bildirimi Gönderme Yardımcısı (Tüm bildirimler ortak gruba yönlendiriliyor)
+window.sendTelegramNotification = async (targetUid, message) => {
+    // Kişisel kelimeleri grup akışına uygun olacak şekilde nötrleştiriyoruz
+    let cleanMessage = message
+        .replace(/size atandı/g, "atandı")
+        .replace(/görevinizin durumu/g, "görevin durumu")
+        .replace(/göreviniz/g, "görev")
+        .replace(/arızanızın durumu/g, "arıza durumu")
+        .replace(/arızanız/g, "arıza");
+
+    await window.sendTelegramGroupNotification(cleanMessage);
+};
+
+// 7. Ortak Telegram Grubuna Bildirim Gönderme Yardımcısı
+window.sendTelegramGroupNotification = async (message) => {
+    const token = window.TELEGRAM_BOT_TOKEN || "YOUR_TELEGRAM_BOT_TOKEN_HERE";
+    const groupId = window.TELEGRAM_GROUP_CHAT_ID || "YOUR_TELEGRAM_GROUP_CHAT_ID_HERE";
+    if (token === "YOUR_TELEGRAM_BOT_TOKEN_HERE" || groupId === "YOUR_TELEGRAM_GROUP_CHAT_ID_HERE") return;
+
+    try {
+        const url = `https://api.telegram.org/bot${token}/sendMessage`;
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                chat_id: groupId,
+                text: message,
+                parse_mode: "HTML"
+            })
+        });
+        const data = await res.json();
+        console.log("[Telegram] Ortak gruba bildirim gönderim sonucu:", data);
+    } catch (err) {
+        console.error("[Telegram] Gruba bildirim gönderme hatası:", err);
+    }
+};
+
+// 8. Ortak Telegram Grubuna Dosya (Resim, Video, Belge) Gönderme Yardımcısı
+window.sendTelegramFileNotification = async (file, captionText) => {
+    const token = window.TELEGRAM_BOT_TOKEN;
+    const groupId = window.TELEGRAM_GROUP_CHAT_ID;
+    if (!token || !groupId || token.includes("YOUR_") || groupId.includes("YOUR_")) return null;
+
+    try {
+        const formData = new FormData();
+        formData.append("chat_id", groupId);
+        formData.append("caption", captionText);
+        formData.append("parse_mode", "HTML");
+
+        let method = "sendDocument";
+        let field = "document";
+
+        if (file.type.startsWith("image/")) {
+            method = "sendPhoto";
+            field = "photo";
+        } else if (file.type.startsWith("video/")) {
+            method = "sendVideo";
+            field = "video";
+        }
+
+        formData.append(field, file);
+
+        const url = `https://api.telegram.org/bot${token}/${method}`;
+        const res = await fetch(url, {
+            method: "POST",
+            body: formData
+        });
+        const data = await res.json();
+        console.log("[Telegram File] Dosyalı bildirim gönderim sonucu:", data);
+        return data;
+    } catch (err) {
+        console.error("[Telegram File] Gruba dosya gönderme hatası:", err);
+        return null;
+    }
+};
+
+
 document.addEventListener("DOMContentLoaded", () => {
-    // Global minimalist kaydırma çubuğu (scrollbar) stillerini enjekte et
+    // PWA Service Worker Kaydı
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+            .then((reg) => {
+                console.log('[Service Worker] Başarıyla kaydedildi. Scope:', reg.scope);
+                // Service Worker kurulduktan sonra FCM'i başlat
+                initializeFirebaseMessaging();
+            })
+            .catch((err) => console.error('[Service Worker] Kayıt hatası:', err));
+    }
+
+    // Global minimalist kaydırma çubuğu (scrollbar) ve yazıcı (print) stillerini enjekte et
     const scrollStyle = document.createElement("style");
     scrollStyle.textContent = `
         /* Webkit Tarayıcılar (Chrome, Safari, Edge) */
@@ -22,6 +365,95 @@ document.addEventListener("DOMContentLoaded", () => {
             scrollbar-width: thin;
             scrollbar-color: #262626 transparent;
         }
+
+        /* Yazıcı / PDF Çıktısı Stilleri */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 0.8cm;
+            }
+            aside, header, button, form:not(#checklist-submit-form), .no-print, #is-tanim-container, #yonetici-isler-container, #izin-form-container, #vardiya-durum-paneli, #cizelge-view-container > div:first-child, #nobet-form-container, #taslak-container, #panel-izinler, #profile-modal, #duyuru-form-container {
+                display: none !important;
+            }
+            
+            /* Sığdırma kuralları (overflow ve pozisyonu sıfırla) */
+            html, body, main, #nobet-tablo-container, div, table, tr, td {
+                position: static !important;
+                overflow: visible !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                float: none !important;
+            }
+
+            body, html {
+                background: white !important;
+                color: black !important;
+                font-size: 8.5px !important;
+            }
+            main, #nobet-tablo-container, #rapor-list {
+                display: block !important;
+                background: white !important;
+                color: black !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            table {
+                border-collapse: collapse !important;
+                width: 100% !important;
+                margin-top: 10px !important;
+            }
+            th, td {
+                border: 1px solid #000 !important;
+                color: black !important;
+                background: transparent !important;
+                padding: 4px 6px !important;
+                font-size: 8.5px !important;
+            }
+            th {
+                font-weight: bold !important;
+                text-transform: uppercase !important;
+                background-color: #e5e7eb !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* Haftasonu günlerini baskıda daha belirgin gri yap */
+            tr.weekend-row {
+                background-color: #e5e7eb !important;
+                font-weight: bold !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* Yazıcı başlığı */
+            .print-header-title {
+                display: block !important;
+            }
+
+            #rapor-list > div {
+                page-break-inside: avoid !important;
+                border: 1px solid #000 !important;
+                background: transparent !important;
+                color: black !important;
+                padding: 10px !important;
+                margin-bottom: 10px !important;
+                border-radius: 0 !important;
+            }
+            .md\\:hidden {
+                display: none !important;
+            }
+            .hidden {
+                display: block !important;
+            }
+            .md\\:block {
+                display: block !important;
+            }
+        }
     `;
     document.head.appendChild(scrollStyle);
 
@@ -33,6 +465,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 1. Oturum Kontrolü
     const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+
+    // Canlı Oturum Doğrulama (Firebase Auth onAuthStateChanged ile)
+    if (loggedInUser) {
+        (async () => {
+            try {
+                const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js");
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js");
+                const { firebaseConfig } = await import("../db/firebase.js");
+
+                const app = initializeApp(firebaseConfig);
+                const auth = getAuth(app);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (!user) {
+                        console.log("[Auth] Oturum sonlandırıldı, çıkış yapılıyor...");
+                        localStorage.removeItem('loggedInUser');
+                        localStorage.removeItem('fcmToken');
+                        window.location.href = "./index.html";
+                    }
+                });
+            } catch (authErr) {
+                console.error("[Auth System Error]", authErr);
+            }
+        })();
+    }
 
     // Giriş sayfasında (index.html) eğer giriş yapılmamışsa ortak layout'u yükleme
     if ((currentPage === "index.html" || currentPage === "") && !loggedInUser) {
@@ -104,6 +561,27 @@ document.addEventListener("DOMContentLoaded", () => {
             icon: `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>`
+        },
+        {
+            name: "Duyurular",
+            path: "duyurular.html",
+            icon: `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>`
+        },
+        {
+            name: "Kontrol Listesi",
+            path: "kontrol-listesi.html",
+            icon: `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>`
+        },
+        {
+            name: "Nöbet Listesi",
+            path: "nobet-listesi.html",
+            icon: `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>`
         }
     ];
 
@@ -170,8 +648,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
         </button>
-        <div class="flex items-center space-x-2">
-            <span class="text-sm font-semibold text-brandYellow">Protokol Arayüzü</span>
+        <div class="flex items-center space-x-3">
+            <span class="text-xs text-neutral-500 hidden sm:inline select-none">Protokol Paneli</span>
+            <button id="profile-btn" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg border border-neutral-850 hover:border-neutral-700 bg-neutral-950/60 hover:bg-neutral-900/80 transition-all cursor-pointer text-xs font-semibold text-neutral-200 focus:outline-none select-none">
+                <svg class="h-3.5 w-3.5 text-brandOrange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>${loggedInUser?.adSoyad || 'Profilim'}</span>
+            </button>
         </div>
     `;
     contentArea.appendChild(header);
@@ -184,13 +668,34 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.innerHTML = "";
     document.body.appendChild(wrapper);
 
+    // 7.5. Profil ayarları modalını başlat
+    initializeProfileModal(loggedInUser);
+ 
     // 8. Olay Dinleyicileri (Sidebar Toggle & Logout)
     initializeSidebarToggle();
 
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
+        logoutBtn.addEventListener('click', async () => {
+            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            const fcmToken = localStorage.getItem('fcmToken');
+            
+            if (loggedInUser && fcmToken) {
+                try {
+                    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js");
+                    const { getDatabase, ref, remove } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js");
+                    const { firebaseConfig } = await import("../db/firebase.js");
+                    
+                    const app = initializeApp(firebaseConfig);
+                    const db = getDatabase(app);
+                    await remove(ref(db, `personeller/${loggedInUser.uid}/fcmTokens/${fcmToken}`));
+                } catch (err) {
+                    console.error("[FCM] Çıkışta token silme hatası:", err);
+                }
+            }
+
             localStorage.removeItem('loggedInUser');
+            localStorage.removeItem('fcmToken');
             window.location.href = './index.html';
         });
     }
@@ -321,4 +826,236 @@ window.showAlert = (title, message, isConfirm = false) => {
             modal.querySelector('#alert-cancel').addEventListener('click', () => closeModal(false));
         }
     });
+};
+
+// ============================================================================
+// PROFİL AYARLARI MODALI VE VERİ YÖNETİMİ
+// ============================================================================
+async function initializeProfileModal(loggedInUser) {
+    if (!loggedInUser) return;
+
+    // Modal HTML'ini oluştur ve body'ye ekle
+    const modal = document.createElement("div");
+    modal.id = "profile-modal";
+    modal.className = "fixed inset-0 z-[100] hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4";
+    modal.innerHTML = `
+        <div class="w-full max-w-md bg-neutral-950 border border-neutral-900 rounded-xl shadow-2xl p-6 relative">
+            <button id="profile-modal-close" class="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors cursor-pointer">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            
+            <!-- Başlık -->
+            <h3 class="text-lg font-bold text-white tracking-wide border-b border-neutral-900 pb-3 mb-4 flex items-center space-x-2">
+                <svg class="h-5 w-5 text-brandOrange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>Profil Ayarlarım</span>
+            </h3>
+            
+            <!-- FORM A: PROFİL AYARLARI -->
+            <form id="profile-settings-form" class="space-y-4" autocomplete="off">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Ad Soyad</label>
+                    <input type="text" id="profile-ad-soyad" disabled class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-neutral-400 opacity-50 cursor-not-allowed">
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Sicil No (Kullanıcı Adı)</label>
+                    <input type="text" id="profile-sicil-no" disabled class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-neutral-400 opacity-50 cursor-not-allowed">
+                </div>
+                
+                <div>
+                    <label for="profile-eposta" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">E-posta Adresi</label>
+                    <input type="email" id="profile-eposta" placeholder="Ornek: eposta@protokol.com" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                </div>
+                
+                <div>
+                    <label for="profile-telefon" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Telefon Numarası</label>
+                    <input type="tel" id="profile-telefon" placeholder="Ornek: 0555 555 55 55" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                </div>
+
+                <!-- Şifre Değiştirme Bölümü (İsteğe Bağlı) -->
+                <div class="border-t border-neutral-900 pt-4 mt-4">
+                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-brandOrange mb-3 select-none">Şifre Değiştir (İsteğe Bağlı)</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="profile-sifre" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Yeni Şifre</label>
+                            <input type="password" id="profile-sifre" placeholder="Boş bırakırsanız değişmez" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                        </div>
+                        <div>
+                            <label for="profile-sifre-tekrar" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Yeni Şifre (Tekrar)</label>
+                            <input type="password" id="profile-sifre-tekrar" placeholder="Yeni şifreyi tekrar yazın" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pt-2">
+                    <button type="submit" id="profile-save-btn" class="w-full bg-brandOrange hover:bg-orange-600 text-white font-bold py-2 px-3 rounded text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5 uppercase tracking-wider">
+                        <span>Güncellemeleri Kaydet</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const profileBtn = document.getElementById("profile-btn");
+    const closeBtn = document.getElementById("profile-modal-close");
+    const settingsForm = document.getElementById("profile-settings-form");
+
+    if (profileBtn) {
+        profileBtn.addEventListener("click", async () => {
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+
+            // Firebase'den güncel verileri çekip form alanlarını doldur
+            try {
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js");
+                const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js");
+                const { firebaseConfig } = await import("../db/firebase.js");
+
+                const app = initializeApp(firebaseConfig);
+                const db = getDatabase(app);
+
+                const snapshot = await get(ref(db, `personeller/${loggedInUser.uid}`));
+                const user = snapshot.val() || {};
+
+                document.getElementById("profile-ad-soyad").value = user.adSoyad || loggedInUser.adSoyad || "";
+                document.getElementById("profile-sicil-no").value = user.sicilNo || loggedInUser.sicilNo || "";
+                document.getElementById("profile-eposta").value = user.eposta || "";
+                document.getElementById("profile-telefon").value = user.telefon || "";
+            } catch (err) {
+                console.error("[Profile] Profil bilgileri çekilemedi:", err);
+            }
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        });
+    }
+
+    // Modal dışına tıklanırsa kapat
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+    });
+
+    if (settingsForm) {
+        settingsForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const saveBtn = document.getElementById("profile-save-btn");
+            const originalBtnHtml = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<span>Kaydediliyor...</span>`;
+
+            const eposta = document.getElementById("profile-eposta").value.trim();
+            const telefon = document.getElementById("profile-telefon").value.trim();
+            const sifreVal = document.getElementById("profile-sifre").value;
+            const sifreTekrarVal = document.getElementById("profile-sifre-tekrar").value;
+
+            try {
+                // Şifre Değiştirme Kontrolü
+                let newPassword = null;
+                if (sifreVal) {
+                    if (sifreVal !== sifreTekrarVal) {
+                        throw new Error("Şifreler uyuşmuyor!");
+                    }
+                    if (sifreVal.length < 6) {
+                        throw new Error("Şifre en az 6 karakter olmalıdır!");
+                    }
+                    newPassword = sifreVal;
+                }
+
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js");
+                const { getDatabase, ref, update } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js");
+                const { firebaseConfig } = await import("../db/firebase.js");
+
+                const app = initializeApp(firebaseConfig);
+                const db = getDatabase(app);
+
+                const updatePayload = {
+                    eposta: eposta,
+                    telefon: telefon
+                };
+
+                // Eğer şifre veya e-posta güncellenecekse
+                const { getAuth, updatePassword, updateEmail } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js");
+                const auth = getAuth(app);
+                const user = auth.currentUser;
+
+                if (user) {
+                    try {
+                        if (eposta && eposta !== user.email) {
+                            await updateEmail(user, eposta);
+                        }
+                        if (newPassword) {
+                            await updatePassword(user, newPassword);
+                        }
+                    } catch (authErr) {
+                        if (authErr.code === "auth/requires-recent-login") {
+                            throw new Error("Güvenlik nedeniyle profil bilgilerinizi güncellemek için yakın zamanda giriş yapmış olmalısınız. Lütfen oturumu kapatıp tekrar giriş yapın.");
+                        } else {
+                            throw authErr;
+                        }
+                    }
+                }
+
+                if (newPassword) {
+                    const { encryptPassword } = await import("../db/firebase.js");
+                    updatePayload.sifre = encryptPassword(newPassword);
+                }
+
+                await update(ref(db, `personeller/${loggedInUser.uid}`), updatePayload);
+
+                // Şifre kutularını temizle
+                document.getElementById("profile-sifre").value = "";
+                document.getElementById("profile-sifre-tekrar").value = "";
+
+                if (window.showToast) {
+                    window.showToast("Profil ayarlarınız başarıyla kaydedildi.", "success");
+                } else {
+                    alert("Profil ayarlarınız başarıyla kaydedildi.");
+                }
+
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            } catch (err) {
+                console.error("[Profile] Profil güncellenirken hata oluştu:", err);
+                if (window.showToast) {
+                    window.showToast(err.message, "error");
+                } else {
+                    alert("Hata: " + err.message);
+                }
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalBtnHtml;
+            }
+        });
+    }
+
+}
+
+// 8. Global Bildirim Ayarı Çekme Yardımcısı (Tüm bildirim tipleri için her zaman true döner)
+window.getNotificationSettings = async () => {
+    return {
+        gorev_yeni_fcm: true,
+        gorev_yeni_telegram: true,
+        gorev_durum_fcm: true,
+        gorev_durum_telegram: true,
+        gorev_mesaj_fcm: true,
+        gorev_mesaj_telegram: true,
+        ariza_yeni_fcm: true,
+        ariza_yeni_telegram: true,
+        ariza_durum_fcm: true,
+        ariza_durum_telegram: true,
+        ariza_mesaj_fcm: true,
+        ariza_mesaj_telegram: true
+    };
 };

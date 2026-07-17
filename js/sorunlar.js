@@ -37,6 +37,8 @@ if (form && loggedInUser.rol === 'personel') {
         const baslikInput = document.getElementById('sorun-baslik').value.trim();
         const aciklamaInput = document.getElementById('sorun-aciklama').value.trim();
         const oncelikInput = document.getElementById('sorun-oncelik').value;
+        const dosyaInput = document.getElementById('sorun-dosya');
+        const file = dosyaInput ? dosyaInput.files[0] : null;
 
         const issueData = {
             baslik: baslikInput,
@@ -47,6 +49,9 @@ if (form && loggedInUser.rol === 'personel') {
             olusturanIsim: loggedInUser.adSoyad,
             olusturmaTarihi: new Date().toISOString()
         };
+        if (file) {
+            issueData.dosyaAdi = file.name;
+        }
 
         submitBtn.disabled = true;
         submitBtn.innerHTML = `<span>Bildiriliyor...</span>`;
@@ -55,6 +60,28 @@ if (form && loggedInUser.rol === 'personel') {
             const newSorunRef = push(ref(db, 'sorunlar'));
             await set(newSorunRef, issueData);
             window.showToast("Sorun başarıyla yöneticiye bildirildi.", "success");
+            
+            // Bildirim Ayarlarını Sorgula
+            const notifSettings = await window.getNotificationSettings();
+
+            // FCM Bildirimi Gönder (Tüm yöneticilere)
+            if (notifSettings.ariza_yeni_fcm && window.sendNotificationToAllManagers) {
+                window.sendNotificationToAllManagers(
+                    "Yeni Arıza Bildirildi ⚠️",
+                    `${loggedInUser.adSoyad}: "${baslikInput}"`
+                );
+            }
+
+            // Telegram Bildirimi Gönder
+            if (notifSettings.ariza_yeni_telegram) {
+                const messageText = `⚠️ <b>Yeni Arıza Bildirildi</b>\n\n👤 <b>Bildiren:</b> ${loggedInUser.adSoyad}\n📌 <b>Başlık:</b> ${baslikInput}\n📖 <b>Detay:</b> ${aciklamaInput}${file ? `\n📎 <b>Ek Dosya:</b> ${file.name}` : ''}`;
+                if (file && window.sendTelegramFileNotification) {
+                    await window.sendTelegramFileNotification(file, messageText);
+                } else if (window.sendTelegramGroupNotification) {
+                    await window.sendTelegramGroupNotification(messageText);
+                }
+            }
+            
             form.reset();
         } catch (error) {
             console.error("Sorun Bildirim Hatası: ", error);
@@ -217,8 +244,8 @@ if (sorunList) {
 
                 msgList.forEach(msg => {
                     const msgDate = new Date(msg.timestamp);
-                    const dateStr = msgDate.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    const timeStr = msgDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                    const dateStr = new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric' }).format(msgDate);
+                    const timeStr = new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' }).format(msgDate);
                     const dateTimeStr = `${dateStr} ${timeStr}`;
 
                     if (msg.isSystem) {
@@ -299,12 +326,21 @@ if (sorunList) {
 
                 <p class="text-xs text-brandYellow mt-3 leading-relaxed whitespace-pre-line bg-neutral-950/40 p-2.5 rounded border border-neutral-900/60">${sorun.aciklama}</p>
 
+                ${sorun.dosyaAdi ? `
+                    <div class="flex items-center text-[10px] text-neutral-400 bg-neutral-950/60 py-1.5 px-2.5 rounded border border-neutral-900/60 mt-2 select-none">
+                        <svg class="h-3.5 w-3.5 mr-2 text-brandOrange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        <span>Ekli Dosya (Telegram'da): <strong class="text-white">${sorun.dosyaAdi}</strong></span>
+                    </div>
+                ` : ''}
+
                 <div class="mt-3.5 pt-2.5 border-t border-neutral-900 space-y-1.5 text-[11px] text-neutral-550 select-none">
                     <div class="flex items-center">
                         <svg class="h-3.5 w-3.5 mr-2 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
-                        <span>Bildirilme Tarihi: <span class="font-mono">${new Date(sorun.olusturmaTarihi).toLocaleDateString('tr-TR')} ${new Date(sorun.olusturmaTarihi).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}</span></span>
+                        <span>Bildirilme Tarihi: <span class="font-mono">${new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(sorun.olusturmaTarihi))} ${new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' }).format(new Date(sorun.olusturmaTarihi))}</span></span>
                     </div>
                 </div>
 
@@ -422,6 +458,44 @@ if (sorunList) {
                 const statusRef = ref(db, `sorunlar/${id}`);
                 await update(statusRef, { durum: targetStatus });
                 window.showToast("Sorun durumu güncellendi.", "success");
+
+                // Bildirim Ayarlarını Sorgula
+                const notifSettings = await window.getNotificationSettings();
+                const sorun = tumSorunlar[id];
+
+                // FCM Bildirimi Gönder
+                if (notifSettings.ariza_durum_fcm && sorun && window.sendNotificationToUser) {
+                    let title = "Arıza Güncellendi 🔔";
+                    let body = `"${sorun.baslik}" başlıklı arıza bildiriminizin durumu güncellendi.`;
+                    
+                    if (targetStatus === "revize") {
+                        title = "Arıza Revize İstendi 🔄";
+                        body = `"${sorun.baslik}" başlıklı arıza için revize istendi.`;
+                    } else if (targetStatus === "iptal") {
+                        title = "Arıza İptal Edildi ❌";
+                        body = `"${sorun.baslik}" başlıklı arıza iptal edildi.`;
+                    } else if (targetStatus === "yapiliyor") {
+                        title = "Arıza Yeniden Aktif 🚀";
+                        body = `"${sorun.baslik}" başlıklı arıza yeniden çalışılıyor durumuna alındı.`;
+                    }
+                    window.sendNotificationToUser(sorun.olusturanId, title, body);
+                }
+
+                // Telegram Bildirimi Gönder
+                if (notifSettings.ariza_durum_telegram && sorun) {
+                    if (window.sendTelegramNotification) {
+                        let text = `🔔 <b>Arıza Bildirimi Güncellendi</b>\n\n"${sorun.baslik}" başlıklı arızanızın durumu güncellendi.`;
+                        if (targetStatus === "revize") {
+                            text = `🔄 <b>Arıza Revize İstendi</b>\n\n"${sorun.baslik}" başlıklı arızanız için revize istendi.`;
+                        } else if (targetStatus === "iptal") {
+                            text = `❌ <b>Arıza İptal Edildi</b>\n\n"${sorun.baslik}" başlıklı arızanız iptal edildi.`;
+                        } else if (targetStatus === "yapiliyor") {
+                            text = `🚀 <b>Arıza Durumu: Çalışılıyor</b>\n\n"${sorun.baslik}" başlıklı arızanız üzerinde çalışılmaya başlandı.`;
+                        }
+                        window.sendTelegramNotification(sorun.olusturanId, text);
+                    }
+
+                }
             } catch (error) {
                 console.error("Durum Güncelleme Hatası: ", error);
                 window.showToast("Hata oluştu: " + error.message, "error");
@@ -479,6 +553,29 @@ if (sorunList) {
                     await update(statusRef, { durum: 'tamamlandi' });
 
                     window.showToast("Sorun çözüldü olarak işaretlendi.", "success");
+
+                    // Bildirim Ayarlarını Sorgula
+                    const notifSettings = await window.getNotificationSettings();
+                    const sorun = tumSorunlar[id];
+
+                    // FCM Bildirimi Gönder
+                    if (notifSettings.ariza_durum_fcm && sorun && window.sendNotificationToUser) {
+                        window.sendNotificationToUser(
+                            sorun.olusturanId,
+                            "Arıza Çözüldü ✅",
+                            `"${sorun.baslik}" başlıklı arıza bildiriminiz çözüldü olarak onaylandı.`
+                        );
+                    }
+
+                    // Telegram Bildirimi Gönder
+                    if (notifSettings.ariza_durum_telegram && sorun) {
+                        if (window.sendTelegramNotification) {
+                            window.sendTelegramNotification(
+                                sorun.olusturanId,
+                                `✅ <b>Arıza Çözüldü</b>\n\n"${sorun.baslik}" başlıklı arıza bildiriminiz çözüldü olarak onaylandı.`
+                            );
+                        }
+                    }
                 } catch (error) {
                     console.error("Sorun Kapatma Hatası: ", error);
                     window.showToast("Hata oluştu: " + error.message, "error");
@@ -502,9 +599,30 @@ if (sorunList) {
                 deleteBtn.innerHTML = '...';
 
                 try {
+                    const sorun = tumSorunlar[id];
                     const sorunRef = ref(db, `sorunlar/${id}`);
                     await remove(sorunRef);
                     window.showToast("Sorun kaydı silindi.", "success");
+
+                    // Bildirim Ayarlarını Sorgula
+                    const notifSettings = await window.getNotificationSettings();
+
+                    // FCM Bildirimi Gönder
+                    if (notifSettings.ariza_durum_fcm && sorun && window.sendNotificationToUser) {
+                        window.sendNotificationToUser(
+                            sorun.olusturanId,
+                            "Arıza Kaydı Silindi 🗑️",
+                            `"${sorun.baslik}" başlıklı arıza bildiriminiz yönetici tarafından silindi.`
+                        );
+                    }
+
+                    // Telegram Bildirimi Gönder
+                    if (notifSettings.ariza_durum_telegram && sorun && window.sendTelegramNotification) {
+                        window.sendTelegramNotification(
+                            sorun.olusturanId,
+                            `🗑️ <b>Arıza Kaydı Silindi</b>\n\n"${sorun.baslik}" başlıklı arıza bildiriminiz yönetici tarafından silindi.`
+                        );
+                    }
                 } catch (error) {
                     console.error("Sorun Silme Hatası: ", error);
                     window.showToast("Silme hatası: " + error.message, "error");
@@ -578,6 +696,44 @@ if (sorunList) {
                 const msgListRef = ref(db, `sorunlar/${id}/mesajlar`);
                 const newMsgRef = push(msgListRef);
                 await set(newMsgRef, messageData);
+
+                // Bildirim Ayarlarını Sorgula
+                const notifSettings = await window.getNotificationSettings();
+                const sorun = tumSorunlar[id];
+
+                // FCM Bildirimi Gönder
+                if (notifSettings.ariza_mesaj_fcm && sorun) {
+                    if (loggedInUser.rol === 'yonetici') {
+                        if (window.sendNotificationToUser) {
+                            window.sendNotificationToUser(
+                                sorun.olusturanId,
+                                "Arızada Yeni Mesaj 💬",
+                                `${loggedInUser.adSoyad}: ${text}`
+                            );
+                        }
+                    } else {
+                        if (window.sendNotificationToAllManagers) {
+                            window.sendNotificationToAllManagers(
+                                "Arızada Yeni Mesaj 💬",
+                                `${loggedInUser.adSoyad}: ${text}`
+                            );
+                        }
+                    }
+                }
+
+                // Telegram Bildirimi Gönder
+                if (notifSettings.ariza_mesaj_telegram && sorun) {
+                    const msgContent = `💬 <b>Arıza Sohbetinde Yeni Mesaj</b>\n\n<b>Konu:</b> ${sorun.baslik}\n<b>Gönderen:</b> ${loggedInUser.adSoyad}\n<b>Mesaj:</b> ${text}`;
+                    if (loggedInUser.rol === 'yonetici') {
+                        if (window.sendTelegramNotification) {
+                            window.sendTelegramNotification(sorun.olusturanId, msgContent);
+                        }
+                    } else {
+                        if (window.sendTelegramGroupNotification) {
+                            window.sendTelegramGroupNotification(msgContent);
+                        }
+                    }
+                }
             } catch (error) {
                 console.error("Mesaj Gönderme Hatası: ", error);
                 window.showToast("Mesaj gönderilemedi: " + error.message, "error");

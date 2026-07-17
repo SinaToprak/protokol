@@ -1,6 +1,6 @@
-import { db, auth, encryptPassword, decryptPassword } from "../db/firebase.js";
+import { db, auth } from "../db/firebase.js";
 import { ref, get } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 
 const loginForm = document.getElementById('login-form');
 
@@ -24,8 +24,11 @@ if (loginForm) {
             <span>Kimlik Doğrulanıyor...</span>
         `;
 
-        // Mock e-posta adresi üretme (Firebase Auth için benzersiz kimlik)
-        const email = `${sicilInput.toLowerCase()}@protokol.local`;
+        // Giriş girdisi e-posta mı yoksa Sicil No mu kontrolü
+        let email = sicilInput;
+        if (!email.includes('@')) {
+            email = `${sicilInput.toLowerCase()}@protokol.local`;
+        }
         const password = sifreInput;
 
         try {
@@ -46,7 +49,7 @@ if (loginForm) {
                     adSoyad: userData.adSoyad,
                     sicilNo: userData.sicilNo,
                     rol: userData.rol || 'personel',
-                    eposta: userData.eposta
+                    eposta: userData.eposta || `${userData.sicilNo.toLowerCase()}@protokol.local`
                 }));
 
                 setTimeout(() => {
@@ -61,12 +64,45 @@ if (loginForm) {
         } catch (error) {
             console.error("Giriş Hatası: ", error);
             if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
-                window.showToast("Hatalı sicil numarası veya şifre!", "error");
+                window.showToast("Hatalı kullanıcı bilgileri veya şifre!", "error");
             } else {
                 window.showToast("Giriş hatası: " + error.message, "error");
             }
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnContent;
+        }
+    });
+}
+
+// Şifremi Unuttum Handler
+const btnForgotPassword = document.getElementById('btn-forgot-password');
+if (btnForgotPassword) {
+    btnForgotPassword.addEventListener('click', async () => {
+        const sicilInput = document.getElementById('login-sicil') ? document.getElementById('login-sicil').value.trim() : '';
+        if (!sicilInput) {
+            window.showToast("Lütfen önce Sicil No veya kayıtlı E-posta adresinizi girin!", "warning");
+            return;
+        }
+
+        let email = sicilInput;
+        if (!email.includes('@')) {
+            email = `${sicilInput.toLowerCase()}@protokol.local`;
+        }
+
+        try {
+            await sendPasswordResetEmail(auth, email);
+            if (email.endsWith("@protokol.local")) {
+                window.showToast("Şifre sıfırlama talebi gönderildi, ancak sistemde kayıtlı e-posta adresiniz bulunmamaktadır. Lütfen yöneticinizle iletişime geçin.", "warning");
+            } else {
+                window.showToast("Şifre sıfırlama e-postası kayıtlı e-posta adresinize gönderildi.", "success");
+            }
+        } catch (error) {
+            console.error("Şifre sıfırlama hatası:", error);
+            if (error.code === "auth/user-not-found") {
+                window.showToast("Bu bilgilere sahip bir kullanıcı bulunamadı!", "error");
+            } else {
+                window.showToast("Talep gönderilemedi: " + error.message, "error");
+            }
         }
     });
 }

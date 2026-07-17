@@ -1,4 +1,4 @@
-import { db, auth } from "../db/firebase.js";
+import { db } from "../db/firebase.js";
 import { ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
 // Giriş kontrolü
@@ -61,6 +61,8 @@ if (form && loggedInUser.rol === 'yonetici') {
         const aciklamaInput = document.getElementById('gorev-aciklama').value.trim();
         const oncelikInput = document.getElementById('gorev-oncelik').value;
         const atananId = atananSelect.value;
+        const dosyaInput = document.getElementById('gorev-dosya');
+        const file = dosyaInput ? dosyaInput.files[0] : null;
 
         if (!atananId) {
             window.showToast("Lütfen görevin atanacağı personeli seçin!", "warning");
@@ -80,6 +82,9 @@ if (form && loggedInUser.rol === 'yonetici') {
             olusturanIsim: loggedInUser.adSoyad,
             olusturmaTarihi: new Date().toISOString()
         };
+        if (file) {
+            taskData.dosyaAdi = file.name;
+        }
 
         submitBtn.disabled = true;
         submitBtn.innerHTML = `
@@ -90,6 +95,25 @@ if (form && loggedInUser.rol === 'yonetici') {
             const newGorevRef = push(ref(db, 'gorevler'));
             await set(newGorevRef, taskData);
             window.showToast("Görev başarıyla atandı.", "success");
+            
+            // Bildirim Ayarlarını Sorgula
+            const notifSettings = await window.getNotificationSettings();
+
+            // FCM Bildirimi Gönder
+            if (notifSettings.gorev_yeni_fcm && window.sendNotificationToUser) {
+                window.sendNotificationToUser(atananId, "Yeni Görev Atandı 📝", `"${baslikInput}" başlıklı görev size atandı.`);
+            }
+
+            // Telegram Bildirimi Gönder
+            if (notifSettings.gorev_yeni_telegram) {
+                const messageText = `📋 <b>Yeni Görev Atandı</b>\n\n👤 <b>Atayan:</b> ${loggedInUser.sicilNo}\n👤 <b>Atanan:</b> ${atananPersonelAd}\n📌 <b>Görev:</b> ${baslikInput}\n📖 <b>Detay:</b> ${aciklamaInput}${file ? `\n📎 <b>Ek Dosya:</b> ${file.name}` : ''}`;
+                if (file && window.sendTelegramFileNotification) {
+                    await window.sendTelegramFileNotification(file, messageText);
+                } else if (window.sendTelegramNotification) {
+                    await window.sendTelegramNotification(atananId, messageText);
+                }
+            }
+            
             form.reset();
         } catch (error) {
             console.error("Görev Kayıt Hatası: ", error);
@@ -266,8 +290,8 @@ if (gorevList) {
 
                 msgList.forEach(msg => {
                     const msgDate = new Date(msg.timestamp);
-                    const dateStr = msgDate.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    const timeStr = msgDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                    const dateStr = new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric' }).format(msgDate);
+                    const timeStr = new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' }).format(msgDate);
                     const dateTimeStr = `${dateStr} ${timeStr}`;
 
                     if (msg.isSystem) {
@@ -351,6 +375,15 @@ if (gorevList) {
 
                 <!-- Görev Açıklaması (Sarı renk, üstündeki boşluk kaldırıldı) --><p class="text-xs text-brandYellow mt-3 leading-relaxed whitespace-pre-line bg-neutral-950/40 p-2.5 rounded border border-neutral-900/60">${gorev.aciklama}</p>
 
+                ${gorev.dosyaAdi ? `
+                    <div class="flex items-center text-[10px] text-neutral-400 bg-neutral-950/60 py-1.5 px-2.5 rounded border border-neutral-900/60 mt-2 select-none">
+                        <svg class="h-3.5 w-3.5 mr-2 text-brandOrange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        <span>Ekli Dosya (Telegram'da): <strong class="text-white">${gorev.dosyaAdi}</strong></span>
+                    </div>
+                ` : ''}
+
                 <div class="mt-3.5 pt-2.5 border-t border-neutral-900 space-y-1.5 text-[11px] text-neutral-500 select-none">
                     <div class="flex items-center">
                         <svg class="h-3.5 w-3.5 mr-2 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -362,7 +395,7 @@ if (gorevList) {
                         <svg class="h-3.5 w-3.5 mr-2 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
-                        <span>Tarih: <span class="font-mono">${new Date(gorev.olusturmaTarihi).toLocaleDateString('tr-TR')} ${new Date(gorev.olusturmaTarihi).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}</span></span>
+                        <span>Tarih: <span class="font-mono">${new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(gorev.olusturmaTarihi))} ${new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' }).format(new Date(gorev.olusturmaTarihi))}</span></span>
                     </div>
                 </div>
 
@@ -476,6 +509,48 @@ if (gorevList) {
                 const statusRef = ref(db, `gorevler/${id}`);
                 await update(statusRef, { durum: targetStatus });
                 window.showToast("Görev durumu güncellendi.", "success");
+
+                // Bildirim Ayarlarını Sorgula
+                const notifSettings = await window.getNotificationSettings();
+                const task = tumGorevler[id];
+
+                // FCM Bildirimi Gönder
+                if (notifSettings.gorev_durum_fcm && task && window.sendNotificationToUser) {
+                    let title = "Görev Güncellendi 🔔";
+                    let body = `"${task.baslik}" başlıklı görevinizin durumu güncellendi.`;
+                    
+                    if (targetStatus === "tamamlandi") {
+                        title = "Görev Onaylandı ✅";
+                        body = `"${task.baslik}" başlıklı göreviniz tamamlandı olarak onaylandı.`;
+                    } else if (targetStatus === "revize") {
+                        title = "Görev Revize İstendi 🔄";
+                        body = `"${task.baslik}" başlıklı göreviniz için revize istendi.`;
+                    } else if (targetStatus === "iptal") {
+                        title = "Görev İptal Edildi ❌";
+                        body = `"${task.baslik}" başlıklı göreviniz iptal edildi.`;
+                    } else if (targetStatus === "yapiliyor") {
+                        title = "Görev Yeniden Aktif 🚀";
+                        body = `"${task.baslik}" başlıklı göreviniz yeniden aktifleştirildi.`;
+                    }
+                    window.sendNotificationToUser(task.atananPersonelId, title, body);
+                }
+
+                // Telegram Bildirimi Gönder
+                if (notifSettings.gorev_durum_telegram && task) {
+                    if (window.sendTelegramNotification) {
+                        let text = `🔔 <b>Görev Güncellendi</b>\n\n"${task.baslik}" başlıklı görevinizin durumu güncellendi.`;
+                        if (targetStatus === "tamamlandi") {
+                            text = `✅ <b>Görev Onaylandı</b>\n\n"${task.baslik}" başlıklı göreviniz tamamlandı olarak onaylandı.`;
+                        } else if (targetStatus === "revize") {
+                            text = `🔄 <b>Görev Revize İstendi</b>\n\n"${task.baslik}" başlıklı göreviniz için revize istendi.`;
+                        } else if (targetStatus === "iptal") {
+                            text = `❌ <b>Görev İptal Edildi</b>\n\n"${task.baslik}" başlıklı göreviniz iptal edildi.`;
+                        } else if (targetStatus === "yapiliyor") {
+                            text = `🚀 <b>Görev Yeniden Aktif</b>\n\n"${task.baslik}" başlıklı göreviniz yeniden aktifleştirildi.`;
+                        }
+                        window.sendTelegramNotification(task.atananPersonelId, text);
+                    }
+                }
             } catch (error) {
                 console.error("Durum Güncelleme Hatası: ", error);
                 window.showToast("Hata oluştu: " + error.message, "error");
@@ -533,12 +608,36 @@ if (gorevList) {
                     await update(statusRef, { durum: 'onay_bekliyor' });
 
                     window.showToast("Çalışma tamamlandı ve onayına sunuldu.", "success");
+
+                    // Bildirim Ayarlarını Sorgula
+                    const notifSettings = await window.getNotificationSettings();
+                    const task = tumGorevler[id];
+
+                    // FCM Bildirimi Gönder
+                    if (notifSettings.gorev_durum_fcm && task && window.sendNotificationToUser) {
+                        window.sendNotificationToUser(
+                            task.olusturanId,
+                            "Görev Onay Bekliyor ⏳",
+                            `${loggedInUser.adSoyad}, "${task.baslik}" başlıklı görevi tamamlayıp onayınıza sundu.`
+                        );
+                    }
+
+                    // Telegram Bildirimi Gönder
+                    if (notifSettings.gorev_durum_telegram && task) {
+                        if (window.sendTelegramNotification) {
+                            window.sendTelegramNotification(
+                                task.olusturanId,
+                                `⏳ <b>Görev Onay Bekliyor</b>\n\n${loggedInUser.adSoyad}, "${task.baslik}" başlıklı görevi tamamlayıp onayınıza sundu.`
+                            );
+                        }
+                    }
                 } catch (error) {
                     console.error("Görev Tamamlama Hatası: ", error);
                     window.showToast("Hata oluştu: " + error.message, "error");
                     if (input) input.value = text;
                 } finally {
                     completeBtn.disabled = false;
+                    completeBtn.completeBtn = originalContent;
                     completeBtn.innerHTML = originalContent;
                 }
             }
@@ -556,9 +655,30 @@ if (gorevList) {
                 deleteBtn.innerHTML = '...';
 
                 try {
+                    const task = tumGorevler[id];
                     const gorevRef = ref(db, `gorevler/${id}`);
                     await remove(gorevRef);
                     window.showToast("Görev başarıyla silindi.", "success");
+
+                    // Bildirim Ayarlarını Sorgula
+                    const notifSettings = await window.getNotificationSettings();
+
+                    // FCM Bildirimi Gönder
+                    if (notifSettings.gorev_durum_fcm && task && window.sendNotificationToUser) {
+                        window.sendNotificationToUser(
+                            task.atananPersonelId,
+                            "Görev Silindi 🗑️",
+                            `"${task.baslik}" başlıklı göreviniz yönetici tarafından silindi.`
+                        );
+                    }
+
+                    // Telegram Bildirimi Gönder
+                    if (notifSettings.gorev_durum_telegram && task && window.sendTelegramNotification) {
+                        window.sendTelegramNotification(
+                            task.atananPersonelId,
+                            `🗑️ <b>Görev Silindi</b>\n\n"${task.baslik}" başlıklı göreviniz yönetici tarafından silindi.`
+                        );
+                    }
                 } catch (error) {
                     console.error("Görev Silme Hatası: ", error);
                     window.showToast("Silme hatası: " + error.message, "error");
@@ -625,6 +745,35 @@ if (gorevList) {
                 const msgListRef = ref(db, `gorevler/${id}/mesajlar`);
                 const newMsgRef = push(msgListRef);
                 await set(newMsgRef, messageData);
+
+                // Bildirim Ayarlarını Sorgula
+                const notifSettings = await window.getNotificationSettings();
+                const task = tumGorevler[id];
+
+                // FCM Bildirimi Gönder
+                if (notifSettings.gorev_mesaj_fcm && task && window.sendNotificationToUser) {
+                    const recipientUid = (loggedInUser.uid === task.olusturanId) 
+                        ? task.atananPersonelId 
+                        : task.olusturanId;
+                    
+                    window.sendNotificationToUser(
+                        recipientUid,
+                        "Görevde Yeni Mesaj 💬",
+                        `${loggedInUser.adSoyad}: ${text}`
+                    );
+                }
+
+                // Telegram Bildirimi Gönder
+                if (notifSettings.gorev_mesaj_telegram && task && window.sendTelegramNotification) {
+                    const recipientUid = (loggedInUser.uid === task.olusturanId) 
+                        ? task.atananPersonelId 
+                        : task.olusturanId;
+                    
+                    window.sendTelegramNotification(
+                        recipientUid,
+                        `💬 <b>Görev Sohbetinde Yeni Mesaj</b>\n\n<b>Konu:</b> ${task.baslik}\n<b>Gönderen:</b> ${loggedInUser.adSoyad}\n<b>Mesaj:</b> ${text}`
+                    );
+                }
             } catch (error) {
                 console.error("Mesaj Gönderme Hatası: ", error);
                 window.showToast("Mesaj gönderilemedi: " + error.message, "error");

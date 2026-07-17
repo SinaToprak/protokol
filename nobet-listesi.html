@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Protokol - Nöbet Listesi</title>
+    <!-- PWA ve Mobil Uyumluluk Meta Etiketleri -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#FF6B00">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="./assets/icons/icon-192x192.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandOrange: '#FF6B00',
+                        brandYellow: '#FFD600',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Dinamik Layout Yükleyici -->
+    <script src="./js/layout.js" defer></script>
+    <!-- Nöbet Listesi Mantığı ve Firebase -->
+    <script type="module" src="./js/nobet-listesi.js" defer></script>
+</head>
+
+<body class="bg-neutral-950 text-white min-h-screen flex justify-center font-sans">
+
+    <!-- Ana İçerik Alanı -->
+    <main class="flex-1 p-6 md:p-8 overflow-y-auto bg-neutral-900 flex flex-col gap-5 w-full max-w-full">
+        
+        <!-- Sekmeler (Tabbed UI) -->
+        <div class="flex items-center space-x-1 border-b border-neutral-900 select-none pb-px no-print">
+            <button id="tab-cizelge" class="py-2.5 px-4 text-xs font-bold uppercase tracking-wider border-b-2 border-brandOrange text-white transition-all focus:outline-none cursor-pointer">
+                Nöbet Çizelgesi
+            </button>
+            <button id="tab-izinler" class="py-2.5 px-4 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-neutral-500 hover:text-neutral-350 transition-all focus:outline-none cursor-pointer">
+                İzin & Vekaletler
+            </button>
+        </div>
+
+        <!-- ================= SEKME 1: NÖBET ÇİZELGESİ PANELİ ================= -->
+        <div id="panel-cizelge" class="space-y-6">
+            
+            <!-- YÖNETİCİ: NÖBET OLUŞTURMA FORMU -->
+            <div id="nobet-form-container" class="w-full bg-black border border-neutral-900 rounded-xl p-5 shadow-sm hidden space-y-5">
+                <div>
+                    <h2 class="text-lg font-bold text-white tracking-wide">Yeni Aylık Nöbet Çizelgesi Oluştur</h2>
+                    <p class="text-xs text-neutral-500 mt-0.5">Lütfen nöbet dönemini, personelleri ve ayın 1. gününe ait başlangıç rollerini girin.</p>
+                </div>
+
+                <form id="nobet-olustur-form" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 items-end" autocomplete="off">
+                    <!-- Nöbet Dönemi -->
+                    <div class="xl:col-span-2">
+                        <label for="nobet-donem" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Nöbet Dönemi (Ay/Yıl)</label>
+                        <input type="month" id="nobet-donem" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors cursor-pointer">
+                    </div>
+                    <!-- Gündüze Gelen Personel -->
+                    <div class="xl:col-span-2">
+                        <label for="personel-a" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Gündüze Gelen Personel</label>
+                        <div class="relative">
+                            <select id="personel-a" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors appearance-none cursor-pointer">
+                                <option value="" class="bg-neutral-950">Seçin...</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-550">
+                                <svg class="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Geceye Gelen Personel -->
+                    <div class="xl:col-span-2">
+                        <label for="personel-b" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Geceye Gelen Personel</label>
+                        <div class="relative">
+                            <select id="personel-b" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors appearance-none cursor-pointer">
+                                <option value="" class="bg-neutral-950">Seçin...</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-550">
+                                <svg class="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- İstirahatli Personel -->
+                    <div class="xl:col-span-2">
+                        <label for="personel-c" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">İstirahatli Personel</label>
+                        <div class="relative">
+                            <select id="personel-c" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors appearance-none cursor-pointer">
+                                <option value="" class="bg-neutral-950">Seçin...</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-550">
+                                <svg class="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Gündüze Gelenin Kaçıncı Gündüzü -->
+                    <div class="xl:col-span-2">
+                        <label for="gunduz-gunu" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Gündüze Gelenin Kaçıncı Gündüzü</label>
+                        <div class="relative">
+                            <select id="gunduz-gunu" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors appearance-none cursor-pointer">
+                                <option value="1" class="bg-neutral-950" selected>1. Gündüzü</option>
+                                <option value="2" class="bg-neutral-950">2. Gündüzü</option>
+                                <option value="3" class="bg-neutral-950">3. Gündüzü</option>
+                                <option value="4" class="bg-neutral-950">4. Gündüzü</option>
+                                <option value="5" class="bg-neutral-950">5. Gündüzü</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-550">
+                                <svg class="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Hesaplama Butonu -->
+                    <div class="xl:col-span-2">
+                        <button type="submit" id="btn-hesapla" class="w-full bg-brandOrange hover:bg-orange-600 text-white font-bold py-2.5 px-3 rounded text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5 uppercase tracking-wider">
+                            <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>Hesapla</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- YÖNETİCİ: HESAPLANAN TASLAK TABLO -->
+            <div id="taslak-container" class="w-full bg-black border border-neutral-900 rounded-xl p-5 shadow-sm hidden space-y-4">
+                <div class="flex items-center justify-between border-b border-neutral-900 pb-3 select-none">
+                    <div>
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-white">Hesaplanan Nöbet Taslağı</h3>
+                        <p class="text-xs text-neutral-500 mt-0.5">Lütfen aşağıdaki günleri doğruladıktan sonra çizelgeyi sisteme kaydedin.</p>
+                    </div>
+                    <button id="btn-kaydet-cizelge" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded text-xs transition-colors cursor-pointer flex items-center space-x-1.5 uppercase tracking-wider">
+                        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                        <span>Çizelgeyi Kaydet</span>
+                    </button>
+                </div>
+
+                <!-- Çizelge Tablosu -->
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-neutral-900 bg-neutral-950 text-neutral-450 uppercase font-bold text-[10px] tracking-wider select-none">
+                                <th class="py-3 px-4 w-1/4">Tarih</th>
+                                <th class="py-3 px-4 w-1/4">Gündüz Vardiyası</th>
+                                <th class="py-3 px-4 w-1/4">Gece Vardiyası</th>
+                                <th class="py-3 px-4 w-1/4">İstirahat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taslak-tablo-body" class="divide-y divide-neutral-900/60">
+                            <!-- JS ile doldurulacak -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ORTAK: KAYITLI NÖBET ÇİZELGESİ GÖRÜNTÜLEME -->
+            <div id="cizelge-view-container" class="w-full space-y-4">
+                <!-- Dönem Süzme Paneli -->
+                <div class="bg-black border border-neutral-900 rounded-xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white tracking-wide">Aktif Nöbet Çizelgesi</h2>
+                        <p class="text-xs text-neutral-500 mt-0.5">Sistemde yayınlanmış olan aylık nöbet planlarını inceleyin.</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <input type="month" id="view-ay" class="bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors cursor-pointer">
+                        <button id="btn-print-shifts" class="bg-neutral-950 hover:bg-neutral-900 border border-neutral-850 text-neutral-400 hover:text-white font-bold py-2 px-3 rounded text-xs transition-colors cursor-pointer flex items-center space-x-1.5 uppercase tracking-wider no-print select-none">
+                            <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            <span>Yazdır / PDF</span>
+                        </button>
+                        <!-- Yönetici için Çizelgeyi Silme butonu -->
+                        <button id="btn-sil-cizelge" class="bg-neutral-950 hover:bg-red-955/10 border border-neutral-850 hover:border-red-900 text-red-500 font-bold py-2 px-3.5 rounded text-xs transition-colors cursor-pointer hidden">
+                            Sil
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Kayıtlı Tablo Konteyneri -->
+                <div id="nobet-tablo-container" class="bg-black border border-neutral-900 rounded-xl p-5 shadow-sm overflow-x-auto w-full">
+                    <!-- Javascript ile yüklenecek (spinner veya tablo) -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SEKME 2: İZİN & VEKALETLER PANELİ ================= -->
+        <div id="panel-izinler" class="space-y-6 hidden">
+            
+            <!-- YÖNETİCİ: İZİN & VEKALET TANIMLAMA FORMU -->
+            <div id="izin-form-container" class="w-full bg-black border border-neutral-900 rounded-xl p-5 shadow-sm hidden space-y-5">
+                <div>
+                    <h2 class="text-lg font-bold text-white tracking-wide">Yeni İzin & Vekalet Tanımla</h2>
+                    <p class="text-xs text-neutral-500 mt-0.5">Personelin izinli olduğu tarihler arasında görevlerini vekaleten yürütecek kişiyi belirleyin.</p>
+                </div>
+
+                <form id="izin-olustur-form" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 items-end" autocomplete="off">
+                    <!-- İzne Ayrılacak Personel -->
+                    <div class="xl:col-span-2">
+                        <label for="izin-personel" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">İzne Ayrılacak Personel</label>
+                        <div class="relative">
+                            <select id="izin-personel" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors appearance-none cursor-pointer">
+                                <option value="" class="bg-neutral-950">Seçin...</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-550">
+                                <svg class="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Vekalet Edecek Personel -->
+                    <div class="xl:col-span-2">
+                        <label for="vekil-personel" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Vekalet Edecek Personel</label>
+                        <div class="relative">
+                            <select id="vekil-personel" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors appearance-none cursor-pointer">
+                                <option value="" class="bg-neutral-950">Seçin...</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-550">
+                                <svg class="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Vekalet Başlangıç Tarihi -->
+                    <div class="xl:col-span-2">
+                        <label for="izin-baslangic" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Vekalet Başlangıç</label>
+                        <input type="date" id="izin-baslangic" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors cursor-pointer">
+                    </div>
+                    <!-- Vekalet Bitiş Tarihi -->
+                    <div class="xl:col-span-2">
+                        <label for="izin-bitis" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Vekalet Bitiş</label>
+                        <input type="date" id="izin-bitis" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors cursor-pointer">
+                    </div>
+                    <!-- İzin Nedeni -->
+                    <div class="xl:col-span-2">
+                        <label for="izin-neden" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">İzin Nedeni</label>
+                        <div class="relative">
+                            <select id="izin-neden" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors appearance-none cursor-pointer">
+                                <option value="" class="bg-neutral-950">Seçin...</option>
+                                <option value="Yıllık İzin" class="bg-neutral-950">Yıllık İzin</option>
+                                <option value="Evlilik İzni" class="bg-neutral-950">Evlilik İzni</option>
+                                <option value="Hastalık İzni" class="bg-neutral-950">Hastalık İzni</option>
+                                <option value="Mazeret İzni" class="bg-neutral-950">Mazeret İzni</option>
+                                <option value="Diğer" class="bg-neutral-950">Diğer</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-550">
+                                <svg class="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- İzin Ekleme Butonu -->
+                    <div class="xl:col-span-2">
+                        <button type="submit" id="btn-izin-ekle" class="w-full bg-brandOrange hover:bg-orange-600 text-white font-bold py-2.5 px-3 rounded text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5 uppercase tracking-wider">
+                            <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>İzin Ekle</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ORTAK: KAYITLI İZİNLER TABLOSU -->
+            <div id="izin-liste-container" class="w-full space-y-4">
+                <div class="bg-black border border-neutral-900 rounded-xl p-5 shadow-sm">
+                    <div>
+                        <h2 class="text-base font-bold text-white tracking-wide">Kayıtlı İzin & Vekalet Listesi</h2>
+                        <p class="text-xs text-neutral-500 mt-0.5">Sistemde kayıtlı olan tüm aktif ve geçmiş personel izin kayıtları.</p>
+                    </div>
+                    
+                    <!-- Kayıtlı İzinler Listesi Tablo Altyapısı -->
+                    <div id="izinler-tablo-container" class="mt-4 overflow-x-auto w-full">
+                        <!-- JS ile yükleniyor -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+</body>
+
+</html>

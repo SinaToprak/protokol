@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Protokol - Duyurular</title>
+    <!-- PWA ve Mobil Uyumluluk Meta Etiketleri -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#FF6B00">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link class="apple-touch-icon" rel="apple-touch-icon" href="./assets/icons/icon-192x192.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandOrange: '#FF6B00',
+                        brandYellow: '#FFD600',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Dinamik Layout Yükleyici -->
+    <script src="./js/layout.js" defer></script>
+    <!-- Duyuru Mantığı ve Firebase Bağlantısı -->
+    <script type="module" src="./js/duyurular.js" defer></script>
+</head>
+
+<body class="bg-neutral-950 text-white min-h-screen flex justify-center font-sans">
+
+    <!-- Ana İçerik Alanı (Dikey sarmalayıcı düzen) -->
+    <main class="flex-1 p-6 md:p-8 overflow-y-auto bg-neutral-900 flex flex-col gap-6 w-full max-w-full">
+        
+        <!-- Duyuru Tanımlama Formu (Sadece Yöneticilere açık, js/duyurular.js ile kontrol edilecek) -->
+        <div id="duyuru-form-container" class="w-full bg-black border border-neutral-900 rounded-xl p-5 shadow-sm hidden">
+            <div class="mb-4">
+                <h2 class="text-lg font-bold text-white tracking-wide">Yeni Duyuru Yayınla</h2>
+                <p class="text-xs text-neutral-500 mt-0.5">Lütfen duyuru içeriğini ve önem derecesini girin.</p>
+            </div>
+
+            <form id="duyuru-form" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 items-end" autocomplete="off">
+                <!-- Duyuru Başlığı -->
+                <div class="xl:col-span-3">
+                    <label for="duyuru-baslik" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Duyuru Başlığı</label>
+                    <input type="text" id="duyuru-baslik" required placeholder="Örn: Hafta Sonu Bakım Çalışması" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                </div>
+
+                <!-- Duyuru İçeriği -->
+                <div class="xl:col-span-6">
+                    <label for="duyuru-icerik" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Duyuru İçeriği / Detayı</label>
+                    <input type="text" id="duyuru-icerik" required placeholder="Duyuru açıklamalarını ve detaylı notları girin..." class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                </div>
+
+                <!-- Önem Derecesi -->
+                <div class="xl:col-span-2">
+                    <label for="duyuru-tip" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Önem Derecesi</label>
+                    <div class="relative">
+                        <select id="duyuru-tip" required class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors appearance-none cursor-pointer">
+                            <option value="bilgi" class="bg-neutral-950" selected>Bilgi ℹ️</option>
+                            <option value="uyari" class="bg-neutral-950">Uyarı ⚠️</option>
+                            <option value="acil" class="bg-neutral-950">Acil 🚨</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-550">
+                            <svg class="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gönder Butonu -->
+                <div class="xl:col-span-1">
+                    <button type="submit" class="w-full bg-brandOrange hover:bg-orange-600 text-white font-bold py-2 px-3 rounded text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5 uppercase tracking-wider">
+                        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15" />
+                        </svg>
+                        <span>Yayınla</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Duyuru Listesi Alanı (Masaüstünde her sırada 2 duyuru kartı) -->
+        <div class="w-full space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">Duyuru & Bilgilendirme</h1>
+                    <p class="text-xs text-neutral-500 mt-0.5">Sistemdeki aktif kurumsal duyurular ve okunma durumları.</p>
+                </div>
+                <div id="duyuru-count" class="hidden text-xs font-semibold px-2.5 py-1 bg-neutral-900 border border-neutral-850 rounded-full text-neutral-400 select-none">
+                    0 Duyuru
+                </div>
+            </div>
+
+            <div id="duyuru-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                <!-- Javascript dinamik yükleyecek -->
+            </div>
+        </div>
+
+    </main>
+
+</body>
+
+</html>

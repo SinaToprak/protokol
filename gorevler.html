@@ -3,8 +3,16 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Protokol - Görev Yönetimi</title>
+    <!-- PWA ve Mobil Uyumluluk Meta Etiketleri -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#FF6B00">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="./assets/icons/icon-192x192.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -36,15 +44,15 @@
                 <p class="text-xs text-neutral-500 mt-0.5" id="form-desc">Lütfen yeni görevin bilgilerini girin ve atanacak personeli seçin.</p>
             </div>
 
-            <form id="gorev-form" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 items-end">
+            <form id="gorev-form" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 items-end" autocomplete="off">
                 <!-- Görev Başlığı -->
-                <div class="xl:col-span-3">
+                <div class="xl:col-span-2">
                     <label for="gorev-baslik" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Görev Başlığı</label>
                     <input type="text" id="gorev-baslik" required placeholder="Örn: Cihaz Kalibrasyonu" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
                 </div>
 
                 <!-- Görev Açıklaması -->
-                <div class="xl:col-span-4">
+                <div class="xl:col-span-3">
                     <label for="gorev-aciklama" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Görev Açıklaması</label>
                     <input type="text" id="gorev-aciklama" required placeholder="Detayları ve açıklama notlarını girin..." class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
                 </div>
@@ -79,6 +87,12 @@
                             </svg>
                         </div>
                     </div>
+                </div>
+
+                <!-- Dosya Ekle -->
+                <div class="xl:col-span-2">
+                    <label for="gorev-dosya" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Dosya / Medya (Ek)</label>
+                    <input type="file" id="gorev-dosya" class="w-full bg-neutral-900 border border-neutral-850 rounded py-1.5 px-2 text-[10px] text-neutral-400 file:mr-2 file:py-0.5 file:px-1.5 file:rounded file:border-0 file:text-[9px] file:font-semibold file:bg-neutral-800 file:text-white hover:file:bg-neutral-700 cursor-pointer focus:outline-none focus:border-brandOrange transition-colors">
                 </div>
 
                 <!-- Gönder Butonu -->

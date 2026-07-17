@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Protokol - Kontrol Listesi</title>
+    <!-- PWA ve Mobil Uyumluluk Meta Etiketleri -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#FF6B00">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="./assets/icons/icon-192x192.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandOrange: '#FF6B00',
+                        brandYellow: '#FFD600',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Dinamik Layout Yükleyici -->
+    <script src="./js/layout.js" defer></script>
+    <!-- Kontrol Listesi Mantığı ve Firebase -->
+    <script type="module" src="./js/kontrol-listesi.js" defer></script>
+</head>
+
+<body class="bg-neutral-950 text-white min-h-screen flex justify-center font-sans">
+
+    <!-- Ana İçerik Alanı -->
+    <main class="flex-1 p-6 md:p-8 overflow-y-auto bg-neutral-900 flex flex-col gap-6 w-full max-w-full">
+        
+        <!-- ================= YÖNETİCİ BÖLÜMÜ: İŞ TANIMLAMA FORMU ================= -->
+        <div id="is-tanim-container" class="w-full bg-black border border-neutral-900 rounded-xl p-5 shadow-sm hidden">
+            <div class="mb-4">
+                <h2 class="text-lg font-bold text-white tracking-wide" id="form-title">Yeni Kontrol İşi Tanımla</h2>
+                <p class="text-xs text-neutral-500 mt-0.5" id="form-desc">Lütfen listeye eklenecek yeni kontrol maddesini girin.</p>
+            </div>
+
+            <form id="kontrol-is-form" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 items-end" autocomplete="off">
+                <input type="hidden" id="edit-id" value="">
+                <!-- İş Başlığı (Col span 4) -->
+                <div class="xl:col-span-4">
+                    <label for="is-baslik" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">İş / Soru Başlığı</label>
+                    <input type="text" id="is-baslik" required placeholder="Örn: Cihazların fişi çekildi mi?" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                </div>
+
+                <!-- İş Açıklaması (Col span 6) -->
+                <div class="xl:col-span-6">
+                    <label for="is-aciklama" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Açıklama / Detay</label>
+                    <input type="text" id="is-aciklama" placeholder="Detay notları buraya girin (isteğe bağlı)..." class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-brandOrange transition-colors">
+                </div>
+
+                <!-- Ekle Butonu (Col span 2) -->
+                <div class="xl:col-span-2">
+                    <button type="submit" id="btn-submit-is" class="w-full bg-brandOrange hover:bg-orange-600 text-white font-bold py-2 px-3 rounded text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5 uppercase tracking-wider">
+                        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span id="btn-submit-is-text">Ekle</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ================= YÖNETİCİ BÖLÜMÜ: MEVCUT İŞLERİN LİSTESİ ================= -->
+        <div id="yonetici-isler-container" class="w-full bg-black border border-neutral-900 rounded-xl p-5 shadow-sm hidden space-y-4">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-neutral-500">Mevcut Kontrol Maddeleri</h3>
+            
+            <div id="kontrol-isleri-listesi" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+                <!-- Javascript ile doldurulacak -->
+            </div>
+        </div>
+
+        <!-- ================= PERSONEL BÖLÜMÜ: CEVAPLAMA FORMU ================= -->
+        <div id="personel-checklist-container" class="w-full bg-black border border-neutral-900 rounded-xl p-5 shadow-sm hidden space-y-4">
+            <div>
+                <h2 class="text-lg font-bold text-white tracking-wide">Günlük Kontrol Listesi Doldur</h2>
+                <p class="text-xs text-neutral-500 mt-0.5">Lütfen aşağıdaki işleri durumlarına göre işaretleyerek raporu tamamlayın.</p>
+            </div>
+            <!-- Aktif Vardiya Durum Paneli -->
+            <div id="vardiya-durum-paneli" class="bg-neutral-950 border border-neutral-900 rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 select-none mb-4">
+                <div class="flex items-center space-x-3.5">
+                    <div class="p-2 rounded bg-neutral-900 border border-neutral-800 text-brandOrange animate-pulse shrink-0">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                            <span>Mevcut Vardiya:</span>
+                            <span id="durum-vardiya-adi" class="text-brandOrange">Yükleniyor...</span>
+                        </div>
+                        <p class="text-[11px] text-neutral-500 mt-0.5" id="durum-tarih-araligi">Lütfen bekleyin, vardiya takvimi sorgulanıyor...</p>
+                    </div>
+                </div>
+                <div class="text-left md:text-right shrink-0">
+                    <div class="text-xs text-neutral-500 font-semibold">Görevli Nöbetçi:</div>
+                    <div class="text-xs font-bold text-brandYellow mt-0.5" id="durum-nobetci-isim">Sorgulanıyor...</div>
+                </div>
+            </div>
+
+            <!-- Yetkisiz Personel Uyarı Kartı -->
+            <div id="yetki-uyari-paneli" class="bg-black/60 border border-red-900/50 rounded-lg p-5 flex flex-col items-center justify-center text-center space-y-3 hidden select-none my-4">
+                <div class="p-3 bg-red-950/20 border border-red-900/40 text-red-500 rounded-full">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-white uppercase tracking-wider">Form Gönderme Kısıtlandı</h4>
+                    <p class="text-xs text-neutral-500 mt-1 max-w-md leading-relaxed">Şu anda aktif görevli vardiyasında bulunmadığınız için bu kontrol raporunu dolduramazsınız. Kontrol listesini gönderme yetkisi sadece o an nöbette olan personele aittir.</p>
+                </div>
+            </div>
+
+            <form id="checklist-submit-form" class="space-y-4" autocomplete="off">
+                <!-- Soru Kartları Buraya Eklenecek -->
+                <div id="checklist-questions-list" class="space-y-3">
+                    <!-- Dinamik sorular -->
+                </div>
+
+                <div class="pt-4 border-t border-neutral-900">
+                    <button type="submit" class="bg-brandOrange hover:bg-orange-600 text-white font-bold py-2.5 px-5 rounded text-xs transition-colors cursor-pointer flex items-center space-x-1.5 uppercase tracking-wider">
+                        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Cevapları Gönder</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ================= YÖNETİCİ BÖLÜMÜ: CEVAP RAPORLARI VE FİLTRELER ================= -->
+        <div id="raporlar-container" class="w-full space-y-4 hidden">
+            <!-- Rapor Filtreleme Paneli (Minimalist) -->
+            <div class="bg-black border border-neutral-900 rounded-xl p-5 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-white tracking-wide">Personel Yanıt Raporları</h2>
+                        <p class="text-xs text-neutral-500 mt-0.5">Personeller tarafından gönderilmiş kontrol raporlarını listeleyin.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="btn-print-reports" class="bg-neutral-950 hover:bg-neutral-900 border border-neutral-850 text-neutral-400 hover:text-white font-bold py-1.5 px-3 rounded text-xs transition-colors cursor-pointer flex items-center space-x-1.5 uppercase tracking-wider no-print select-none">
+                            <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            <span>Yazdır / PDF</span>
+                        </button>
+                        <span id="rapor-count" class="bg-neutral-900 border border-neutral-850 text-neutral-400 text-xs font-bold px-3 py-1 rounded-full hidden">
+                            0 Rapor
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 items-end">
+                    <!-- Personel Seçim Filtresi -->
+                    <div class="xl:col-span-4">
+                        <label for="filter-personel" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Personel Filtresi</label>
+                        <div class="relative">
+                            <select id="filter-personel" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors appearance-none cursor-pointer">
+                                <option value="" class="bg-neutral-950">Tüm Personeller</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-550">
+                                <svg class="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tarih Seçim Filtresi -->
+                    <div class="xl:col-span-4">
+                        <label for="filter-tarih" class="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Tarih Filtresi</label>
+                        <input type="date" id="filter-tarih" class="w-full bg-neutral-900 border border-neutral-850 rounded py-2 px-3 text-xs text-white focus:outline-none focus:border-brandOrange transition-colors cursor-pointer">
+                    </div>
+
+                    <!-- Filtreleri Temizleme Butonu -->
+                    <div class="xl:col-span-2">
+                        <button id="btn-reset-filters" class="w-full bg-neutral-950 hover:bg-neutral-900 border border-neutral-850 text-neutral-400 hover:text-white font-bold py-2 px-3 rounded text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5 uppercase tracking-wider">
+                            <span>Sıfırla</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kart Izgarası (2 Kolonlu yapı) -->
+            <div id="rapor-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start w-full">
+                <!-- Javascript ile doldurulacak -->
+            </div>
+        </div>
+    </main>
+
+</body>
+
+</html>

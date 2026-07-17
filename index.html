@@ -3,8 +3,16 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kalibrasyon Protokolü - Giriş</title>
+    <!-- PWA ve Mobil Uyumluluk Meta Etiketleri -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#FF6B00">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="./assets/icons/icon-192x192.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -39,43 +47,8 @@
 
 <body class="bg-neutral-950 text-white min-h-screen flex items-center justify-center font-sans p-4 relative overflow-hidden">
 
-    <!-- Dinamik Giriş / Dashboard Ayracı -->
-    <script>
-        const loggedIn = JSON.parse(localStorage.getItem('loggedInUser'));
-        if (loggedIn) {
-            // Body sınıflarını layout'a uydur
-            document.body.className = "bg-neutral-950 text-white min-h-screen flex justify-center font-sans";
-            
-            // Dashboard Main alanını oluştur
-            const main = document.createElement("main");
-            main.className = "flex-1 p-6 md:p-8 overflow-y-auto bg-neutral-900 flex flex-col justify-center items-center";
-            main.innerHTML = `
-                <div class="text-center max-w-xl p-8 bg-black border border-neutral-800 rounded-2xl shadow-2xl relative overflow-hidden">
-                    <div class="absolute -top-20 -left-20 w-40 h-40 bg-brandOrange/10 rounded-full blur-2xl"></div>
-                    <h1 class="text-3xl font-extrabold text-white tracking-tight mb-4 relative z-10">
-                        Kalibrasyon Protokolüne <span class="text-brandOrange">Hoş Geldiniz</span>
-                    </h1>
-                    <p class="text-neutral-400 text-sm mb-6 leading-relaxed relative z-10">
-                        Merhaba, <span class="text-white font-semibold">${loggedIn.adSoyad}</span> (${loggedIn.rol === 'yonetici' ? 'Yönetici' : 'Personel'}). Sistem kimliğiniz başarıyla doğrulandı. 
-                        Sol menü üzerinden yetkilendirildiğiniz alanlara erişebilirsiniz.
-                    </p>
-                    ${loggedIn.rol === 'yonetici' ? `
-                        <a href="./personeller.html" class="inline-flex items-center space-x-2 bg-brandOrange hover:bg-orange-600 text-white font-semibold py-2.5 px-5 rounded-lg transition-colors cursor-pointer text-xs uppercase tracking-wider relative z-10 shadow-lg shadow-brandOrange/20">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                            <span>Personel Yönetimi</span>
-                        </a>
-                    ` : `
-                        <div class="text-brandYellow text-xs font-semibold bg-brandYellow/5 border border-brandYellow/25 rounded-lg py-2.5 px-4 inline-block relative z-10 select-none">
-                            Personel paneli üzerinden işlemlerinizi sürdürebilirsiniz.
-                        </div>
-                    `}
-                </div>
-            `;
-            document.body.appendChild(main);
-        }
-    </script>
+    <!-- Dashboard Modülü Girişi (Giriş yapılmışsa dashboard.js yüklenir) -->
+    <script type="module" src="./js/dashboard.js" defer></script>
 
     <!-- Giriş Ekranı Görünümü -->
     <div id="login-view" class="w-full min-h-screen flex items-center justify-center absolute inset-0 z-10 p-4">
@@ -99,7 +72,7 @@
             </div>
 
             <!-- Giriş Formu -->
-            <form id="login-form" class="space-y-6">
+            <form id="login-form" class="space-y-6" autocomplete="off">
                 <!-- Sicil No -->
                 <div>
                     <label for="login-sicil" class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">Sicil No</label>
@@ -115,7 +88,10 @@
 
                 <!-- Şifre -->
                 <div>
-                    <label for="login-sifre" class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">Şifre</label>
+                    <div class="flex justify-between items-center mb-2 select-none">
+                        <label for="login-sifre" class="block text-xs font-semibold uppercase tracking-wider text-neutral-400">Şifre</label>
+                        <button type="button" id="btn-forgot-password" class="text-xs text-neutral-500 hover:text-brandOrange font-semibold transition-colors cursor-pointer focus:outline-none">Şifremi Unuttum?</button>
+                    </div>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-neutral-500">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
